@@ -1,9 +1,9 @@
 #![allow(non_camel_case_types, non_snake_case)]
 use std::ops::{Deref, DerefMut};
 
-use winsafe::{prelude::*, BITMAPINFOHEADER};
+use winsafe::{prelude::*, BITMAPINFOHEADER, HBITMAP, HDC, HFILEMAP};
 use winsafe::{co, SysResult, BITMAPINFO, HGLOBAL, RGBQUAD};
-use winsafe::guard::GlobalFreeGuard;
+use winsafe::guard::{DeleteObjectGuard, GlobalFreeGuard};
 
 fn len_bmiColors(hd: &BITMAPINFOHEADER) -> usize {
     if hd.biCompression == co::BI::RGB && hd.biBitCount <= 8 {
@@ -17,11 +17,11 @@ fn len_bmiColors(hd: &BITMAPINFOHEADER) -> usize {
     }
 }
 
-const fn stride(hd: &BITMAPINFOHEADER) -> usize {
+pub const fn stride(hd: &BITMAPINFOHEADER) -> usize {
     (((hd.biWidth as usize * hd.biBitCount as usize) + 31) & !31) >> 3
 }
 
-const fn size(hd: &BITMAPINFOHEADER) -> usize {
+pub const fn size(hd: &BITMAPINFOHEADER) -> usize {
     hd.biHeight.abs() as usize * stride(hd)
 }
 
@@ -116,5 +116,76 @@ impl BitmapinfoGuard {
             .zip(new_self.bmiColors_mut())
             .for_each(|(src, dest)| *dest = *src); // copy all PALETTEENTRY into struct room
         Ok(new_self)
+    }
+}
+
+//-----------------------------------------------------------------------------------
+
+mod ffi {
+    use winsafe::{prelude::Handle, GetLastError, SysResult};
+
+    type BOOL = i32;
+    type COMPTR = *mut std::ffi::c_void;
+    type HANDLE = *mut std::ffi::c_void;
+    type HRES = u32; // originally declared as i32
+    type PCSTR = *const u16;
+    type PCVOID = *const std::ffi::c_void;
+    type PFUNC = *const std::ffi::c_void;
+    type PSTR = *mut u16;
+    type PVOID = *mut std::ffi::c_void;
+
+    #[link(name = "gdi32")]
+    extern "system" {
+        pub fn CreateDIBSection( _: HANDLE, _: PCVOID, _: u32, _: PVOID, _: HANDLE, _: u32 ) -> HANDLE;
+    }
+
+    pub(super) fn ptr_to_sysresult(ptr: HANDLE) -> SysResult<HANDLE> {
+        if ptr.is_null() {
+            Err(GetLastError())
+        } else {
+            Ok(ptr)
+        }
+    }
+    
+    pub(super) fn ptr_to_sysresult_handle<H>(ptr: HANDLE) -> SysResult<H>
+        where H: Handle,
+    {
+        ptr_to_sysresult(ptr)
+            .map(|ptr| unsafe { Handle::from_ptr(ptr) })
+    }
+
+}
+
+impl gdi_ext_Hdc for HDC {}
+
+#[must_use]
+pub trait gdi_ext_Hdc: gdi_Hdc {
+
+    /// [`CreateDIBSection`](https://learn.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-createdibsection)
+	/// function.
+    fn CreateDIBSection(&self,
+        bmi: &BITMAPINFO,
+        usage: co::DIB,
+        bits:  &mut Option<&mut [u8]>,
+        section: &HFILEMAP,
+        section_offset: u32
+    ) -> SysResult<DeleteObjectGuard<HBITMAP>>
+    {
+        let mut _bits: *mut u8 = std::ptr::null_mut();
+        unsafe{
+            ffi::ptr_to_sysresult_handle(
+                ffi::CreateDIBSection(
+                    self.ptr(),
+                    bmi as *const _ as _,
+                    usage.raw(),
+                    &mut _bits as *mut _ as _,
+                    section.ptr(),
+                    section_offset
+                )
+            ).map(|h| {*bits = Some(std::slice::from_raw_parts_mut(
+                _bits,
+                size(&bmi.bmiHeader),
+            )); DeleteObjectGuard::new(h)})
+        }.map_err(|e| {*bits = None; e})
     }
 }
