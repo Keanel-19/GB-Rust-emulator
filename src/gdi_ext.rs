@@ -5,24 +5,16 @@ use winsafe::{prelude::*, BITMAP, BITMAPINFOHEADER, HBITMAP, HDC, HFILEMAP};
 use winsafe::{co, SysResult, BITMAPINFO, HGLOBAL, RGBQUAD};
 use winsafe::guard::{DeleteObjectGuard, GlobalFreeGuard};
 
-fn len_bmiColors(hd: &BITMAPINFOHEADER) -> usize {
-    if hd.biCompression == co::BI::RGB && hd.biBitCount <= 8 {
-        if hd.biClrUsed > 0 {
-            hd.biClrUsed as _
-        } else {
-            1 << hd.biBitCount
-        }
-    } else {
-        1
+pub trait ExtendRgbQuad {
+    fn new(r: u8, g: u8, b: u8) -> Self;
+}
+
+impl ExtendRgbQuad for RGBQUAD {
+    fn new(r: u8, g: u8, b: u8) -> Self {
+        let mut quad: RGBQUAD = RGBQUAD::default();
+        quad.rgbRed = r; quad.rgbGreen = g; quad.rgbBlue = b;
+        quad
     }
-}
-
-pub const fn stride(hd: &BITMAPINFOHEADER) -> usize {
-    (((hd.biWidth as usize * hd.biBitCount as usize) + 31) & !31) >> 3
-}
-
-pub const fn size(hd: &BITMAPINFOHEADER) -> usize {
-    hd.biHeight.abs() as usize * stride(hd)
 }
 
 //----------------------------------------------------
