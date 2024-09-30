@@ -1,7 +1,7 @@
 #![allow(dead_code, non_camel_case_types, non_snake_case)]
 use std::ops::{Deref, DerefMut};
 
-use winsafe::{prelude::*, BITMAPINFOHEADER, HBITMAP, HDC, HFILEMAP};
+use winsafe::{prelude::*, BITMAP, BITMAPINFOHEADER, HBITMAP, HDC, HFILEMAP};
 use winsafe::{co, SysResult, BITMAPINFO, HGLOBAL, RGBQUAD};
 use winsafe::guard::{DeleteObjectGuard, GlobalFreeGuard};
 
@@ -30,10 +30,6 @@ pub const fn size(hd: &BITMAPINFOHEADER) -> usize {
 pub trait ExtendBitmapinfo {
     #[must_use]
     fn new(header: BITMAPINFOHEADER, colors: &[RGBQUAD]) -> SysResult<BitmapinfoGuard>;
-    #[must_use]
-    fn bmiColors(&self) -> &[RGBQUAD];
-    #[must_use]
-    fn bmiColors_mut(&mut self) -> &mut [RGBQUAD];
 }
 
 impl ExtendBitmapinfo for BITMAPINFO {
@@ -47,28 +43,6 @@ impl ExtendBitmapinfo for BITMAPINFO {
     {
         BitmapinfoGuard::new(header, colors)
     }
-
-    /// Returns a constant slice over the `palPalEntry` entries.
-    #[must_use]
-    fn bmiColors(&self) -> &[RGBQUAD] {
-        unsafe {
-            std::slice::from_raw_parts(
-                self.bmiColors.as_ptr(),
-                len_bmiColors(&self.bmiHeader),
-            )
-        }
-    }
-
-    /// Returns a mutable slice over the `palPalEntry` entries.
-    #[must_use]
-    fn bmiColors_mut(&mut self) -> &mut [RGBQUAD] {
-        unsafe {
-            std::slice::from_raw_parts_mut(
-                self.bmiColors.as_mut_ptr(),
-                len_bmiColors(&self.bmiHeader),
-            )
-        }
-    }
 }
 
 //-----------------------------------------------------------------------------------
@@ -77,6 +51,7 @@ impl ExtendBitmapinfo for BITMAPINFO {
 /// allocated memory.
 pub struct BitmapinfoGuard {
     ptr: GlobalFreeGuard,
+    colors_length: usize,
 }
 
 impl Deref for BitmapinfoGuard {
@@ -100,22 +75,43 @@ impl BitmapinfoGuard {
         colors: &[RGBQUAD],
     ) -> SysResult<Self>
     {
-        assert_eq!(len_bmiColors(&header),colors.len());
-        
         let sz = std::mem::size_of::<BITMAPINFO>() // size in bytes of the allocated struct
-            - std::mem::size_of::<RGBQUAD>()
-            + (colors.len() * std::mem::size_of::<RGBQUAD>());
+            + ((colors.len() - 1).max(0) * std::mem::size_of::<RGBQUAD>());
+            //Quand modifier winsafe : delete ".max(0)" et rendre ".bmiColors" pub(Crate)
         let mut new_self = Self {
             ptr: HGLOBAL::GlobalAlloc(
                 Some(co::GMEM::FIXED | co::GMEM::ZEROINIT),
                 sz,
             )?,
+            colors_length: colors.len()
         };
         new_self.bmiHeader = header;
         colors.iter()
             .zip(new_self.bmiColors_mut())
             .for_each(|(src, dest)| *dest = *src); // copy all PALETTEENTRY into struct room
         Ok(new_self)
+    }
+
+    /// Returns a constant slice over the `bimColors` entries.
+    #[must_use]
+    pub fn bmiColors(&self) -> &[RGBQUAD] {
+        unsafe {
+            std::slice::from_raw_parts(
+                self.bmiColors.as_ptr(),
+                self.colors_length
+            )
+        }
+    }
+
+    /// Returns a mutable slice over the `bimColors` entries.
+    #[must_use]
+    pub fn bmiColors_mut(&mut self) -> &mut [RGBQUAD] {
+        unsafe {
+            std::slice::from_raw_parts_mut(
+                self.bmiColors.as_mut_ptr(),
+                self.colors_length
+            )
+        }
     }
 }
 
@@ -182,10 +178,16 @@ pub trait gdi_ext_Hdc: gdi_Hdc {
                     section.ptr(),
                     section_offset
                 )
-            ).map(|h| {*bits = Some(std::slice::from_raw_parts_mut(
-                _bits,
-                size(&bmi.bmiHeader),
-            )); DeleteObjectGuard::new(h)})
+            ).map(|h:HBITMAP| {
+                let mut bitmap: BITMAP = Default::default();
+                let _ = h.GetObject(&mut bitmap).map( |_|
+                    *bits = Some(std::slice::from_raw_parts_mut(
+                        _bits,
+                        (bitmap.bmWidthBytes * bitmap.bmHeight) as usize,
+                    ))
+                ).map_err(|_| *bits = None);
+                DeleteObjectGuard::new(h)
+            })
         }.map_err(|e| {*bits = None; e})
     }
 }
