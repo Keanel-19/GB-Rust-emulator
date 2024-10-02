@@ -14,7 +14,6 @@ pub fn create_window(src_size: SIZE, default_mult: i32, src_hdc: HDC, is_running
     window_main.on().wm_paint(move || {
         let hdc = w.hwnd().BeginPaint()?;
         let paint = hdc.paintstruct();
-        println!("{} {} {} {}",paint.rcPaint.left,paint.rcPaint.top,paint.rcPaint.right,paint.rcPaint.bottom);
         hdc.StretchBlt(
             POINT { x: paint.rcPaint.left,y: paint.rcPaint.top }, 
             SIZE { cx: paint.rcPaint.right-paint.rcPaint.left, cy: paint.rcPaint.bottom-paint.rcPaint.top }, 
