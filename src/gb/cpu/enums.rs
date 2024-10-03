@@ -1,4 +1,4 @@
-use std::{convert::Infallible, error::Error, fmt, mem::transmute};
+use std::mem::transmute;
 use super::Cpu;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -13,26 +13,6 @@ pub(super) enum Instruction {
     U8Reg8(fn (&mut Cpu, u8, Reg8) -> Instruction, u8, Reg8),
 }
 
-//-------------------------------------------------------------
-
-/// The error type returned when a checked integral type conversion fails.
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub struct TryFromIntError;
-
-impl fmt::Display for TryFromIntError {
-    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
-        "out of range integral type conversion attempted".fmt(fmt)
-    }
-}
-
-impl Error for TryFromIntError {}
-
-impl From<Infallible> for TryFromIntError {
-    fn from(x: Infallible) -> TryFromIntError {
-        match x {}
-    }
-}
-
 //----------------------------------------------------------
 
 macro_rules! try_from_u8 {
@@ -43,11 +23,11 @@ macro_rules! try_from_u8 {
                 if value < $max {
                     Ok(unsafe {transmute(value)})
                 } else {
-                    Err(TryFromIntError)
+                    Err(concat!(stringify!($enum), " only allow integer strictely less than ", $max))
                 }
             }
             
-            type Error=TryFromIntError;
+            type Error=&'static str;
         }
     };
 }
@@ -77,7 +57,7 @@ try_from_u8!(Reg16,4);
 #[repr(u8)]
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub(super) enum Reg16Stack {
-    BC,DE,HL,SP
+    BC,DE,HL,AF
 }
 
 try_from_u8!(Reg16Stack,4);
