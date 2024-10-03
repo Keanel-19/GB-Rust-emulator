@@ -1,6 +1,115 @@
+use crate::gb::memory::Memory;
+
 use super::enums::*;
 
 pub struct Cpu {
+    regs: Registres,
+    instruct: Instruction,
+    mem: Memory,
+}
+
+impl RW<Reg8> for Cpu {
+    type Data = u8;
+
+    fn read(&self, arg: Reg8) -> Self::Data {
+        match arg {
+            Reg8::A => self.regs.a,
+            Reg8::B => self.regs.b,
+            Reg8::C => self.regs.c,
+            Reg8::D => self.regs.d,
+            Reg8::E => self.regs.e,
+            Reg8::H => self.regs.h,
+            Reg8::L => self.regs.l,
+            Reg8::IndirectHL => self.mem.read(self.regs.hl()),
+        }
+    }
+
+    fn write(&mut self, arg: Reg8, value: Self::Data) {
+        match arg {
+            Reg8::A => self.regs.a = value,
+            Reg8::B => self.regs.b = value,
+            Reg8::C => self.regs.c = value,
+            Reg8::D => self.regs.d = value,
+            Reg8::E => self.regs.e = value,
+            Reg8::H => self.regs.h = value,
+            Reg8::L => self.regs.l = value,
+            Reg8::IndirectHL => self.mem.write(self.regs.hl(), value),
+        }
+    }
+}
+
+impl RW<Reg16> for Cpu {
+    type Data = u16;
+
+    fn read(&self, arg: Reg16) -> Self::Data {
+        match arg {
+            Reg16::BC => self.regs.bc(),
+            Reg16::DE => self.regs.de(),
+            Reg16::HL => self.regs.hl(),
+            Reg16::SP => self.regs.sp,
+        }
+    }
+
+    fn write(&mut self, arg: Reg16, value: Self::Data) {
+        match arg {
+            Reg16::BC => self.regs.set_bc(value),
+            Reg16::DE => self.regs.set_de(value),
+            Reg16::HL => self.regs.set_hl(value),
+            Reg16::SP => self.regs.sp = value,
+        }
+    }
+}
+
+impl RW<Reg16Indirect> for Cpu {
+    type Data = u8;
+
+    fn read(&self, arg: Reg16Indirect) -> Self::Data {
+        match arg {
+            Reg16Indirect::BC => self.mem.read(self.regs.bc()),
+            Reg16Indirect::DE => self.mem.read(self.regs.de()),
+            _                 => self.mem.read(self.regs.hl()),
+        }
+    }
+
+    fn write(&mut self, arg: Reg16Indirect, value: Self::Data) {
+        match arg {
+            Reg16Indirect::BC => self.mem.write(self.regs.bc(), value),
+            Reg16Indirect::DE => self.mem.write(self.regs.de(), value),
+            _                 => self.mem.write(self.regs.hl(), value),
+        }
+    }
+}
+
+impl RW<Reg16Stack> for Cpu {
+    type Data = u16;
+
+    fn read(&self, arg: Reg16Stack) -> Self::Data {
+        match arg {
+            Reg16Stack::BC => self.regs.bc(),
+            Reg16Stack::DE => self.regs.de(),
+            Reg16Stack::HL => self.regs.hl(),
+            Reg16Stack::AF => self.regs.af(),
+        }
+    }
+
+    fn write(&mut self, arg: Reg16Stack, value: Self::Data) {
+        match arg {
+            Reg16Stack::BC => self.regs.set_bc(value),
+            Reg16Stack::DE => self.regs.set_de(value),
+            Reg16Stack::HL => self.regs.set_hl(value),
+            Reg16Stack::AF => self.regs.set_af(value),
+        }
+    }
+}
+
+trait RW<T> {
+    type Data;
+
+    fn read(&self, arg: T) -> Self::Data;
+    fn write(&mut self, arg: T, value: Self::Data);
+}
+
+pub struct Registres {
     a: u8,
     b: u8,
     c: u8,
@@ -19,11 +128,10 @@ pub struct Cpu {
     pc: u16,
     sp: u16,
 
-    instruction: Instruction,
     interrupt_enable: bool,
 }
 
-impl Cpu {
+impl Registres {
     const fn f(&self) -> u8 {
           (self.flag_z as u8) << 7
         + (self.flag_n as u8) << 6
