@@ -3,9 +3,15 @@ use crate::gb::memory::Memory;
 use super::enums::*;
 
 pub struct Cpu {
-    regs: Registres,
-    instruct: Instruction,
-    mem: Memory,
+    pub(super) regs: Registres,
+    pub(super) instruct: Instruction,
+    pub mem: Memory,
+}
+
+impl Cpu {
+    pub(super) fn fetch_cycle(&self) -> Instruction {
+        todo!()
+    }
 }
 
 impl RW<Reg8> for Cpu {
@@ -102,33 +108,33 @@ impl RW<Reg16Stack> for Cpu {
     }
 }
 
-trait RW<T> {
+pub(super) trait RW<T> {
     type Data;
 
     fn read(&self, arg: T) -> Self::Data;
     fn write(&mut self, arg: T, value: Self::Data);
 }
 
-pub struct Registres {
-    a: u8,
-    b: u8,
-    c: u8,
-    d: u8,
-    e: u8,
-    h: u8,
-    l: u8,
-    w: u8,
-    z: u8,
+pub(super) struct Registres {
+    pub(super) a: u8,
+    pub(super) b: u8,
+    pub(super) c: u8,
+    pub(super) d: u8,
+    pub(super) e: u8,
+    pub(super) h: u8,
+    pub(super) l: u8,
+    pub(super) w: u8,
+    pub(super) z: u8,
 
-    flag_z: bool,
-    flag_n: bool,
-    flag_h: bool,
-    flag_c: bool,
+    pub(super) flag_z: bool,
+    pub(super) flag_n: bool,
+    pub(super) flag_h: bool,
+    pub(super) flag_c: bool,
 
-    pc: u16,
-    sp: u16,
+    pub(super) pc: u16,
+    pub(super) sp: u16,
 
-    interrupt_enable: bool,
+    pub(super) interrupt_enable: bool,
 }
 
 impl Registres {
