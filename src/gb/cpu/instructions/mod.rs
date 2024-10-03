@@ -1,5 +1,4 @@
-#[macro_use]
-mod macros;
+#[macro_use] mod macros;
 mod block_0;
 mod block_1;
 mod block_2;
