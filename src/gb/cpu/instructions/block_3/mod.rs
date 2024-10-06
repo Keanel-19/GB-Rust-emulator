@@ -5,11 +5,13 @@ mod stack;
 mod interrupt;
 
 mod special {
-    use crate::gb::cpu::{enums::{Instruction, Reg8}, structs::RW, CpuContext};
+    use crate::gb::cpu::{enums::Instruction, instructions::decode::decode_cb, CpuContext};
 
     opcode!{
         prefix (cpu: &mut CpuContext) {
-            todo!()
+            let next = decode_cb(cpu.hw.read(cpu.regs.pc));
+            cpu.regs.pc += 1;
+            next
         }
     }
 }

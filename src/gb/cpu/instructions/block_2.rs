@@ -1,4 +1,4 @@
-use crate::gb::cpu::{enums::{Instruction, Reg8}, CpuContext};
+use crate::gb::cpu::{enums::{Instruction, Reg8}, structs::RW, CpuContext};
 
 opcode!{
     add_a_r8 (cpu: &mut CpuContext , r: Reg8) {
@@ -6,7 +6,7 @@ opcode!{
             cpu.regs.z = cpu.hw.read(cpu.regs.hl());
             return Instruction::U8(op, cpu.regs.z);
         }
-        op(cpu, 0)
+        op(cpu, cpu.read(r))
     }
 
     op (cpu: &mut CpuContext , v: u8) {
@@ -27,7 +27,7 @@ opcode!{
             cpu.regs.z = cpu.hw.read(cpu.regs.hl());
             return Instruction::U8(op, cpu.regs.z);
         }
-        op(cpu, 0)
+        op(cpu, cpu.read(r))
     }
 
     op (cpu: &mut CpuContext , v: u8) {
@@ -55,7 +55,7 @@ opcode!{
             cpu.regs.z = cpu.hw.read(cpu.regs.hl());
             return Instruction::U8(op, cpu.regs.z);
         }
-        op(cpu, 0)
+        op(cpu, cpu.read(r))
     }
 
     op (cpu: &mut CpuContext , v: u8) {
@@ -76,7 +76,7 @@ opcode!{
             cpu.regs.z = cpu.hw.read(cpu.regs.hl());
             return Instruction::U8(op, cpu.regs.z);
         }
-        op(cpu, 0)
+        op(cpu, cpu.read(r))
     }
 
     op (cpu: &mut CpuContext , v: u8) {
@@ -104,7 +104,7 @@ opcode!{
             cpu.regs.z = cpu.hw.read(cpu.regs.hl());
             return Instruction::U8(op, cpu.regs.z);
         }
-        op(cpu, 0)
+        op(cpu, cpu.read(r))
     }
 
     op (cpu: &mut CpuContext , v: u8) {
@@ -124,7 +124,7 @@ opcode!{
             cpu.regs.z = cpu.hw.read(cpu.regs.hl());
             return Instruction::U8(op, cpu.regs.z);
         }
-        op(cpu, 0)
+        op(cpu, cpu.read(r))
     }
 
     op (cpu: &mut CpuContext , v: u8) {
@@ -144,7 +144,7 @@ opcode!{
             cpu.regs.z = cpu.hw.read(cpu.regs.hl());
             return Instruction::U8(op, cpu.regs.z);
         }
-        op(cpu, 0)
+        op(cpu, cpu.read(r))
     }
 
     op (cpu: &mut CpuContext , v: u8) {
@@ -164,7 +164,7 @@ opcode!{
             cpu.regs.z = cpu.hw.read(cpu.regs.hl());
             return Instruction::U8(op, cpu.regs.z);
         }
-        op(cpu, 0)
+        op(cpu, cpu.read(r))
     }
 
     op (cpu: &mut CpuContext , v: u8) {

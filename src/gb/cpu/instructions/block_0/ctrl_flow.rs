@@ -2,7 +2,7 @@ use crate::gb::cpu::{enums::{Instruction, OpCond}, structs::RW, CpuContext};
 
 opcode!{
     nop (cpu: &mut CpuContext) {
-        todo!()
+        cpu.fetch_pc()
     }
 }
 
