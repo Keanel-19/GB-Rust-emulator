@@ -5,10 +5,10 @@ mod stack;
 mod interrupt;
 
 mod special {
-    use crate::gb::cpu::{enums::{Instruction, Reg8}, structs::RW, Cpu};
+    use crate::gb::cpu::{enums::{Instruction, Reg8}, structs::RW, CpuContext};
 
     opcode!{
-        prefix (cpu: &mut Cpu) {
+        prefix (cpu: &mut CpuContext) {
             todo!()
         }
     }

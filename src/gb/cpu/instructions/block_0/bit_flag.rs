@@ -1,49 +1,49 @@
-use crate::gb::cpu::{enums::Instruction, structs::RW, Cpu};
+use crate::gb::cpu::{enums::Instruction, structs::RW, CpuContext};
 
 opcode!{
-    rlca (cpu: &mut Cpu) {
+    rlca (cpu: &mut CpuContext) {
         todo!()
     }
 }
 
 opcode!{
-    rrca (cpu: &mut Cpu) {
+    rrca (cpu: &mut CpuContext) {
         todo!()
     }
 }
 
 opcode!{
-    rla (cpu: &mut Cpu) {
+    rla (cpu: &mut CpuContext) {
         todo!()
     }
 }
 
 opcode!{
-    rra (cpu: &mut Cpu) {
+    rra (cpu: &mut CpuContext) {
         todo!()
     }
 }
 
 opcode!{
-    daa (cpu: &mut Cpu) {
+    daa (cpu: &mut CpuContext) {
         todo!()
     }
 }
 
 opcode!{
-    cpl (cpu: &mut Cpu) {
+    cpl (cpu: &mut CpuContext) {
         todo!()
     }
 }
 
 opcode!{
-    scf (cpu: &mut Cpu) {
+    scf (cpu: &mut CpuContext) {
         todo!()
     }
 }
 
 opcode!{
-    ccf (cpu: &mut Cpu) {
+    ccf (cpu: &mut CpuContext) {
         todo!()
     }
 }

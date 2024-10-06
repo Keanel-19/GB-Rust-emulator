@@ -1,19 +1,19 @@
-use crate::gb::cpu::{enums::Instruction, structs::RW, Cpu};
+use crate::gb::cpu::{enums::Instruction, structs::RW, CpuContext};
 
 opcode!{
-    reti (cpu: &mut Cpu) {
+    reti (cpu: &mut CpuContext) {
         todo!()
     }
 }
 
 opcode!{
-    di (cpu: &mut Cpu) {
+    di (cpu: &mut CpuContext) {
         todo!()
     }
 }
 
 opcode!{
-    ei (cpu: &mut Cpu) {
+    ei (cpu: &mut CpuContext) {
         todo!()
     }
 }
