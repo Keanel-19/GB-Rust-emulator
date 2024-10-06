@@ -1,20 +1,26 @@
-use crate::gb::memory::Memory;
+use crate::gb::Hardware;
 
 use super::enums::*;
 
-pub struct Cpu {
-    pub(super) regs: Registres,
-    pub(super) instruct: Instruction,
-    pub mem: Memory,
+pub struct CpuContext<'a> {
+    pub(super) regs: &'a mut Registres,
+    pub(super) hw: &'a mut Hardware,
 }
 
-impl Cpu {
-    pub(super) fn fetch_cycle(&self) -> Instruction {
+impl<'a> CpuContext<'a> {
+    pub(super) fn fetch_cycle(&mut self, addr: u16) -> Instruction {
         todo!()
+    }
+
+    #[inline]
+    pub(super) fn fetch_pc(&mut self) -> Instruction {
+        let next = self.fetch_cycle(self.regs.pc);
+        self.regs.pc += 1;
+        next
     }
 }
 
-impl RW<Reg8> for Cpu {
+impl<'a> RW<Reg8> for CpuContext<'a> {
     type Data = u8;
 
     fn read(&self, arg: Reg8) -> Self::Data {
@@ -26,7 +32,7 @@ impl RW<Reg8> for Cpu {
             Reg8::E => self.regs.e,
             Reg8::H => self.regs.h,
             Reg8::L => self.regs.l,
-            Reg8::IndirectHL => self.mem.read(self.regs.hl()),
+            Reg8::IndirectHL => self.hw.read(self.regs.hl()),
         }
     }
 
@@ -39,12 +45,12 @@ impl RW<Reg8> for Cpu {
             Reg8::E => self.regs.e = value,
             Reg8::H => self.regs.h = value,
             Reg8::L => self.regs.l = value,
-            Reg8::IndirectHL => self.mem.write(self.regs.hl(), value),
+            Reg8::IndirectHL => self.hw.write(self.regs.hl(), value),
         }
     }
 }
 
-impl RW<Reg16> for Cpu {
+impl<'a> RW<Reg16> for CpuContext<'a> {
     type Data = u16;
 
     fn read(&self, arg: Reg16) -> Self::Data {
@@ -66,27 +72,27 @@ impl RW<Reg16> for Cpu {
     }
 }
 
-impl RW<Reg16Indirect> for Cpu {
+impl<'a> RW<Reg16Indirect> for CpuContext<'a> {
     type Data = u8;
 
     fn read(&self, arg: Reg16Indirect) -> Self::Data {
         match arg {
-            Reg16Indirect::BC => self.mem.read(self.regs.bc()),
-            Reg16Indirect::DE => self.mem.read(self.regs.de()),
-            _                 => self.mem.read(self.regs.hl()),
+            Reg16Indirect::BC => self.hw.read(self.regs.bc()),
+            Reg16Indirect::DE => self.hw.read(self.regs.de()),
+            _                 => self.hw.read(self.regs.hl()),
         }
     }
 
     fn write(&mut self, arg: Reg16Indirect, value: Self::Data) {
         match arg {
-            Reg16Indirect::BC => self.mem.write(self.regs.bc(), value),
-            Reg16Indirect::DE => self.mem.write(self.regs.de(), value),
-            _                 => self.mem.write(self.regs.hl(), value),
+            Reg16Indirect::BC => self.hw.write(self.regs.bc(), value),
+            Reg16Indirect::DE => self.hw.write(self.regs.de(), value),
+            _                 => self.hw.write(self.regs.hl(), value),
         }
     }
 }
 
-impl RW<Reg16Stack> for Cpu {
+impl<'a> RW<Reg16Stack> for CpuContext<'a> {
     type Data = u16;
 
     fn read(&self, arg: Reg16Stack) -> Self::Data {
@@ -138,81 +144,87 @@ pub(super) struct Registres {
 }
 
 impl Registres {
-    const fn f(&self) -> u8 {
+    pub(super) const fn f(&self) -> u8 {
           (self.flag_z as u8) << 7
         + (self.flag_n as u8) << 6
         + (self.flag_h as u8) << 5
         + (self.flag_c as u8) << 4
     }
 
-    fn set_f(&mut self, v:u8) {
+    pub(super) fn set_f(&mut self, v:u8) {
         self.flag_z = 0b1000_0000 & v != 0;
         self.flag_n = 0b0100_0000 & v != 0;
         self.flag_h = 0b0010_0000 & v != 0;
         self.flag_c = 0b0001_0000 & v != 0;
     }
 
-    const fn af(&self) -> u16 {
+    pub(super) const fn af(&self) -> u16 {
         (self.a as u16) << 8 + self.f() as u16
     }
 
-    fn set_af(&mut self, v: u16) {
+    pub(super) fn set_af(&mut self, v: u16) {
         self.a = (v >> 8) as _ ;
         self.set_f(v as u8);
     }
 
-    const fn bc(&self) -> u16 {
+    pub(super) const fn bc(&self) -> u16 {
         (self.b as u16) << 8 + self.c as u16
     }
 
-    fn set_bc(&mut self, v: u16) {
+    pub(super) fn set_bc(&mut self, v: u16) {
         self.b = (v >> 8) as _ ;
         self.c = v as u8;
     }
 
 
-    const fn de(&self) -> u16 {
+    pub(super) const fn de(&self) -> u16 {
         (self.d as u16) << 8 + self.e as u16
     }
 
-    fn set_de(&mut self, v: u16) {
+    pub(super) fn set_de(&mut self, v: u16) {
         self.d = (v >> 8) as _ ;
         self.e = v as u8;
     }
 
 
-    const fn hl(&self) -> u16 {
+    pub(super) const fn hl(&self) -> u16 {
         (self.h as u16) << 8 + self.l as u16
     }
 
-    fn set_hl(&mut self, v: u16) {
+    pub(super) fn set_hl(&mut self, v: u16) {
         self.h = (v >> 8) as _ ;
         self.l = v as u8;
     }
 
 
-    const fn wz(&self) -> u16 {
+    pub(super) const fn wz(&self) -> u16 {
         (self.w as u16) << 8 + self.z as u16
     }
 
-    fn set_wz(&mut self, v: u16) {
+    pub(super) fn set_wz(&mut self, v: u16) {
         self.w = (v >> 8) as _ ;
         self.z = v as u8;
     }
 
-    const fn pc_high(&self) -> u8 {
+    pub(super) const fn pc_high(&self) -> u8 {
         (self.pc >> 8) as _
     }
 
-    const fn pc_low(&self) -> u8 {
+    pub(super) const fn pc_low(&self) -> u8 {
         self.pc as _
     }
     
-    const fn sp_high(&self) -> u8 {
+    pub(super) const fn sp_high(&self) -> u8 {
         (self.sp >> 8) as _
     }
 
-    const fn sp_low(&self) -> u8 {
+    pub(super) const fn sp_low(&self) -> u8 {
         self.sp as _
+    }
+}
+
+impl Default for Registres {
+    fn default() -> Self {
+        Self { a: Default::default(), b: Default::default(), c: Default::default(), d: Default::default(), e: Default::default(), h: Default::default(), l: Default::default(), w: Default::default(), z: Default::default(), flag_z: Default::default(), flag_n: Default::default(), flag_h: Default::default(), flag_c: Default::default(), pc: Default::default(), sp: Default::default(), interrupt_enable: Default::default() }
     }
 }
