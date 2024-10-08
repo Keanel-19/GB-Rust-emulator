@@ -1,4 +1,4 @@
-use crate::gb::cpu::{enums::Instruction, structs::RW, CpuContext};
+use crate::gb::cpu::{enums::Instruction, CpuContext};
 
 opcode!{
     ldh_c_a (cpu: &mut CpuContext) {

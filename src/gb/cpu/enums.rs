@@ -11,6 +11,7 @@ pub(super) enum Instruction {
     Reg16Stack(fn (&mut CpuContext, Reg16Stack) -> Instruction, Reg16Stack),
     U8(fn (&mut CpuContext, u8) -> Instruction, u8),
     U8Reg8(fn (&mut CpuContext, u8, Reg8) -> Instruction, u8, Reg8),
+    OpCond(fn (&mut CpuContext, OpCond) -> Instruction, OpCond),
 }
 
 impl Instruction {
@@ -24,6 +25,7 @@ impl Instruction {
             Instruction::Reg16Stack(f, reg16_stack) => f(cpu, reg16_stack),
             Instruction::U8(f, n) => f(cpu,n),
             Instruction::U8Reg8(f, nn, reg8) => f(cpu, nn, reg8),
+            Instruction::OpCond(f, op_cond) => f(cpu, op_cond),
         }
     }
 }
