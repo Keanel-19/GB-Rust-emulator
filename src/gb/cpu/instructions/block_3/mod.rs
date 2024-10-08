@@ -15,3 +15,10 @@ mod special {
         }
     }
 }
+
+pub use math::*;
+pub use ctrl_flow::*;
+pub use ld::*;
+pub use stack::*;
+pub use interrupt::*;
+pub use special::*;

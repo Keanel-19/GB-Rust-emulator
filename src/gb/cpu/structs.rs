@@ -1,6 +1,6 @@
 use crate::gb::Hardware;
 
-use super::enums::*;
+use super::{enums::*, instructions::{decode, special}};
 
 pub struct CpuContext<'a> {
     pub(super) regs: &'a mut Registres,
@@ -9,7 +9,13 @@ pub struct CpuContext<'a> {
 
 impl<'a> CpuContext<'a> {
     pub(super) fn fetch_cycle(&mut self, addr: u16) -> Instruction {
-        todo!()
+        let opcode = self.hw.read(addr);
+        if self.regs.interrupt_enable && false { // TODO : test if pending interrupt
+            self.regs.interrupt_enable = false;
+            Instruction::Void(special::dispatch_interrupt)
+        } else {
+            decode::decode(opcode)
+        }
     }
 
     #[inline]

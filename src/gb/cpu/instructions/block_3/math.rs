@@ -1,4 +1,4 @@
-use crate::gb::cpu::{enums::Instruction, structs::RW, CpuContext};
+use crate::gb::cpu::{enums::Instruction, CpuContext};
 
 opcode!{
     add_a_u8 (cpu: &mut CpuContext) {

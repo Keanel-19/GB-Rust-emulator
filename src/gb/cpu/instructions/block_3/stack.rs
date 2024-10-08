@@ -1,33 +1,33 @@
-use crate::gb::cpu::{enums::{Instruction, Reg16}, structs::RW, CpuContext};
+use crate::gb::cpu::{enums::{Instruction, Reg16Stack}, structs::RW, CpuContext};
 
 opcode!{
-    pop_r16 (cpu: &mut CpuContext, r: Reg16) {
+    pop_r16 (cpu: &mut CpuContext, r: Reg16Stack) {
         cpu.regs.z = cpu.hw.read(cpu.regs.sp);
         cpu.regs.sp += 1;
-        Instruction::Reg16(load_w, r)
+        Instruction::Reg16Stack(load_w, r)
     }
-    load_w (cpu: &mut CpuContext, r: Reg16) {
+    load_w (cpu: &mut CpuContext, r: Reg16Stack) {
         cpu.regs.w = cpu.hw.read(cpu.regs.sp);
         cpu.regs.sp += 1;
-        Instruction::Reg16(write_r16, r)
+        Instruction::Reg16Stack(write_r16, r)
     }
-    write_r16 (cpu: &mut CpuContext, r: Reg16) {
+    write_r16 (cpu: &mut CpuContext, r: Reg16Stack) {
         cpu.write(r,cpu.regs.wz());
         cpu.fetch_pc()
     }
 }
 
 opcode!{
-    push_r16 (cpu: &mut CpuContext, r: Reg16) {
+    push_r16 (cpu: &mut CpuContext, r: Reg16Stack) {
         cpu.regs.sp -= 1;
-        Instruction::Reg16(write_msb, r)
+        Instruction::Reg16Stack(write_msb, r)
     }
-    write_msb (cpu: &mut CpuContext, r: Reg16) {
-        cpu.hw.write(cpu.regs.sp, (cpu.read(r) >> 8)as u8);
+    write_msb (cpu: &mut CpuContext, r: Reg16Stack) {
+        cpu.hw.write(cpu.regs.sp, (cpu.read(r) >> 8) as u8);
         cpu.regs.sp -= 1;
-        Instruction::Reg16(write_lsb, r)
+        Instruction::Reg16Stack(write_lsb, r)
     }
-    write_lsb (cpu: &mut CpuContext, r: Reg16) {
+    write_lsb (cpu: &mut CpuContext, r: Reg16Stack) {
         cpu.hw.write(cpu.regs.sp, cpu.read(r) as u8);
         Instruction::default()
     }

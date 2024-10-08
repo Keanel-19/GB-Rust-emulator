@@ -39,7 +39,7 @@ opcode!{
         if r == Reg16Indirect::HLDecr {
             cpu.regs.set_hl(cpu.regs.hl().wrapping_sub(1));
         }
-        Instruction::default()
+        Instruction::Void(load_a)
     }
     load_a (cpu: &mut CpuContext) {
         cpu.regs.a = cpu.regs.z;
