@@ -1,5 +1,5 @@
 use std::mem::transmute;
-use super::{instructions::block_0::nop, structs::CpuContext};
+use super::{instructions::block_0::nop, structs::{CpuContext, Registres}};
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub(super) enum Instruction {
@@ -102,3 +102,15 @@ pub(super) enum OpCond {
 }
 
 try_from_u8!(OpCond,4);
+
+impl OpCond {
+    #[inline]
+    pub(super) fn check(&self, reg: &Registres) -> bool {
+        match self {
+            OpCond::NZ => !reg.flag_z,
+            OpCond::Z => reg.flag_z,
+            OpCond::NC => !reg.flag_c,
+            OpCond::C => reg.flag_c,
+        }
+    }
+}
